@@ -1,0 +1,7 @@
+project_id = "gpqwnnobumvoixnwtlak"
+
+[functions.generate-aliases]
+verify_jwt = false
+
+[functions.use-alias]
+verify_jwt = false
