@@ -10,13 +10,38 @@ interface GenerateRequest {
   count: number;
 }
 
-function generateRandomToken(length: number = 8): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+function generateDotAlias(username: string, domain: string, existingAliases: Set<string>): { alias: string; token: string } {
+  let attempts = 0;
+  const maxAttempts = 100;
+  
+  while (attempts < maxAttempts) {
+    const chars = username.split('');
+    let aliasUsername = '';
+    
+    for (let i = 0; i < chars.length; i++) {
+      aliasUsername += chars[i];
+      // Randomly insert dot (20% chance) but not at the end
+      if (Math.random() < 0.2 && i !== chars.length - 1) {
+        aliasUsername += '.';
+      }
+    }
+    
+    const alias = `${aliasUsername}@${domain}`;
+    
+    // Ensure uniqueness
+    if (!existingAliases.has(alias)) {
+      // Generate a simple token identifier
+      const token = Math.random().toString(36).substring(2, 10);
+      return { alias, token };
+    }
+    
+    attempts++;
   }
-  return result;
+  
+  // Fallback: use a numbered suffix if we can't find unique dot pattern
+  const token = Math.random().toString(36).substring(2, 10);
+  const alias = `${username}.${token}@${domain}`;
+  return { alias, token };
 }
 
 Deno.serve(async (req) => {
@@ -55,14 +80,15 @@ Deno.serve(async (req) => {
     const batchSize = 1000;
     const batches = Math.ceil(count / batchSize);
     let totalGenerated = 0;
+    const existingAliases = new Set<string>();
 
     for (let batch = 0; batch < batches; batch++) {
       const currentBatchSize = Math.min(batchSize, count - totalGenerated);
       const aliases = [];
 
       for (let i = 0; i < currentBatchSize; i++) {
-        const token = generateRandomToken();
-        const alias = `${localPart}_${token}@${domain}`;
+        const { alias, token } = generateDotAlias(localPart, domain, existingAliases);
+        existingAliases.add(alias);
         
         aliases.push({
           alias,
