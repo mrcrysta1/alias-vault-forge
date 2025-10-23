@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
       for (let i = 0; i < currentBatchSize; i++) {
         const token = generateRandomToken();
-        const alias = `${localPart}+${token}@${domain}`;
+        const alias = `${localPart}_${token}@${domain}`;
         
         aliases.push({
           alias,
